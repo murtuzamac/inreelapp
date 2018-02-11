@@ -1,0 +1,50 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+      "users": {
+      "$userid": {
+        // The user is allowed to write everything in their bucket.
+        ".write": "$userid ==auth.uid",
+        ".read": "auth != null",
+        "following": {
+          // The following list should only contain actual ids from the "people" list.
+          "$followingid": {
+            ".validate": "root.child('people').hasChild($followingid)"
+          }
+        },
+        "followers": {
+          // Anyone can add themself to to this user's followers list.
+          "$followerid": {
+            ".write": "$followerid ==auth.uid"
+          }
+        },
+        "feed": {
+          "$reviewid": {
+            // User A can write in user B's feed, but only if A is following B, and only for reviews for which they are the author.
+            ".write": "root.child('users/' + $userid + '/following').hasChild(auth.uid) && root.child('reviews/' + $reviewid + '/author').val() ==auth.uid"
+          }
+        },
+      },
+    },
+    "reviews": {
+      // A global list of reviews (the "firehose").
+      "$reviewid": {
+        // Modifying an existing review is not allowed.
+        ".write": "!data.exists()",
+        // Every review should have an author and a body.
+        ".validate": "newData.hasChildren(['uid', 'reviewtext'])",
+        // A user can attribute a review only to themselves.
+        "uid": {
+          ".validate": "newData.val() ==auth.uid"
+        },
+        "reviewtext": {
+          ".validate": "newData.isString()"
+        }
+      }
+    },
+    "usernames": {
+      ".read": true
+    }  
+  }
+}
