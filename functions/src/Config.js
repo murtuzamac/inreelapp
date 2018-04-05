@@ -1,0 +1,3 @@
+exports.REVIESPAGESIZE = 5;
+exports.COMMENTSPAGESIZE = 9;
+exports.USERSPAGESIZE = 10;

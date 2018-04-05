@@ -10,50 +10,14 @@ admin.initializeApp(functions.config().firebase);
 
 const reviewFeedPageSize = 5;
 const commentPageSize = 9;
+const userListPageSize = 10;
+
+const reviewsHandler = require('./src/services/Reviews');
+const followDetailsHandler = require('./src/services/FollowDetails');
+
 
 exports.reviews = functions.https.onRequest((req, res) => {
-  var userId = req.query.userId;
-  var startKey = req.query.startKey;
-  var refPath = req.query.refPath;
-  var feed = admin.database().ref(refPath);
-  var populateReviews;
-  var query = startKey ? feed.orderByKey().limitToLast(reviewFeedPageSize).endAt(startKey) : feed.orderByKey().limitToLast(reviewFeedPageSize);
-  // var query = admin.database().ref("/users/" + userId + "/feed").orderByKey().limitToLast(reviewFeedPageSize);
-  query.once("value", function (feeds) {
-    if (feeds.exists()) {
-      var reviewIdArr = Object.keys(feeds.val()),
-        reviewArr = [];
-      reviewIdArr.reverse();
-      populateReviews = (reviewId, index) => {
-        getSingleReviewDetails(reviewId, userId, function (reviewRenderData) {
-          var len = (reviewIdArr.length < reviewFeedPageSize) ? 1 : 2; //to handle situation when thre are less records than the page size in the batch
-          var _index = index + 1;
-          reviewArr.push(reviewRenderData)
-          //condition to continue the recursion or not
-          if (index < reviewIdArr.length - len) {
-            populateReviews(reviewIdArr[_index], _index);
-          }
-          else { //done loading all reviews in the batch
-            var result = {
-              result: reviewArr,
-              status: 'success',
-              startKey: reviewIdArr[index + 1] ? reviewIdArr[index + 1] : null
-            }
-            res.send(result);
-          }
-        })
-      }
-      populateReviews(reviewIdArr[0], 0);
-    }
-    else {
-      var result = {
-        result: [],
-        status: 'success',
-        startKey: null
-      }
-      res.send(result);
-    }
-  });
+  reviewsHandler.handler(req, res, admin.database());
 });
 
 exports.comments = functions.https.onRequest((req, res) => {
@@ -98,6 +62,10 @@ exports.comments = functions.https.onRequest((req, res) => {
       res.send(result);
     }
   });
+});
+
+exports.follow = functions.https.onRequest((req, res) => {
+  followDetailsHandler.handler(req, res, admin.database());
 });
 
 getSingleReviewDetails = (reviewId, userId, callback) => {
@@ -149,11 +117,9 @@ getSingleReviewDetails = (reviewId, userId, callback) => {
             break;
           }
         }
-
         return callback(reviewRenderData)
       })
     })
-
   })
 }
 
@@ -181,3 +147,37 @@ getSingleComment = (commentId, callback) => {
     })
   })
 }
+
+getSingleUserDetails = (userId, callback) => {
+  var userRef = admin.database().ref("users/" + userId);
+  userRef.once("value", function (userSnapshot) {
+    var userData = userSnapshot.val();
+
+    //json design for a single comment 
+    var userJson = {
+      userId: userData.userid,
+      userName: userData.username,
+      userFullname: userData.userfullname,
+      userAvatar: userData.useravatar,
+    }
+
+    callback(userJson)
+  })
+}
+
+isAlreadyFollowing = (byUserIdDbRef, userId) => new Promise((resolve, reject) => {
+  byUserIdDbRef.orderByKey().equalTo(userId).once("value", (snapshot) => {
+    if (snapshot.exists()) {
+      resolve(true)
+    }
+    else {
+      resolve(false)
+    }
+  })
+})
+
+
+// {
+
+// }
+// require('./src/services/Reviews');
