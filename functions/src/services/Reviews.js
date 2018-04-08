@@ -1,4 +1,5 @@
-const CONSTANTS = require('../Config')
+const CONSTANTS = require('../Config');
+const HELPER = require('../Helper');
 
 exports.handler = (req, res, database) => {
       var userId = req.query.userId;
@@ -14,7 +15,7 @@ exports.handler = (req, res, database) => {
             reviewArr = [];
           reviewIdArr.reverse();
           populateReviews = (reviewId, index) => {
-            getSingleReviewDetails(reviewId, userId, function (reviewRenderData) {
+            HELPER.getSingleReviewDetails(reviewId, userId, database, function (reviewRenderData) {
               var len = (reviewIdArr.length < CONSTANTS.REVIESPAGESIZE) ? 1 : 2; //to handle situation when thre are less records than the page size in the batch
               var _index = index + 1;
               reviewArr.push(reviewRenderData)

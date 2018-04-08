@@ -1,4 +1,5 @@
-const CONSTANTS = require('../Config')
+const CONSTANTS = require('../Config');
+const HELPER = require('../Helper');
 
 exports.handler = (req, res, database) => {
     var startKey = req.query.startKey;
@@ -13,9 +14,8 @@ exports.handler = (req, res, database) => {
             var userIdArr = Object.keys(users.val()),
                 usersArr = [];
             userIdArr.reverse();
-            alreadyFollowing = false;
             getUser = (userId, index) => {
-                getSingleUserDetails(userId, (userJson) => {
+                HELPER.getSingleUserDetails(userId, database, (userJson) => {
                     var byUserIdDbRef = database.ref("users/" + byUserId + "/followings");
                     (new Promise((resolve, reject) => {
                         if (byUserId !== userId) {
@@ -38,7 +38,7 @@ exports.handler = (req, res, database) => {
                         usersArr.push(userJson)
                         //condition to continue the recursion or not
                         if (index < userIdArr.length - len) {
-                           return getUser(userIdArr[_index], _index);
+                            return getUser(userIdArr[_index], _index);
                         }
                         else {
                             var result = {
