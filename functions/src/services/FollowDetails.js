@@ -12,8 +12,8 @@ exports.handler = (req, res, database) => {
         if (users.exists()) {
             var userIdArr = Object.keys(users.val()),
                 usersArr = [];
-            userIdArr.reverse(),
-                alreadyFollowing = false;
+            userIdArr.reverse();
+            alreadyFollowing = false;
             getUser = (userId, index) => {
                 getSingleUserDetails(userId, (userJson) => {
                     var byUserIdDbRef = database.ref("users/" + byUserId + "/followings");
@@ -30,7 +30,7 @@ exports.handler = (req, res, database) => {
                         }
                         else {
                             resolve(true)
-                        };
+                        }
                     })).then((alreadyFollowing) => {
                         userJson.alreadyFollowing = alreadyFollowing;
                         var len = (userIdArr.length < CONSTANTS.USERSPAGESIZE) ? 1 : 2; //to handle situation when thre are less records than the page size in the batch
@@ -38,7 +38,7 @@ exports.handler = (req, res, database) => {
                         usersArr.push(userJson)
                         //condition to continue the recursion or not
                         if (index < userIdArr.length - len) {
-                            getUser(userIdArr[_index], _index);
+                           return getUser(userIdArr[_index], _index);
                         }
                         else {
                             var result = {
@@ -46,8 +46,10 @@ exports.handler = (req, res, database) => {
                                 status: 'success',
                                 startKey: userIdArr[index + 1] ? userIdArr[index + 1] : null
                             }
-                            res.send(result);
+                            return res.send(result);
                         }
+                    }).catch((error) => {
+                        console.log(error)
                     });
                 })
             }
